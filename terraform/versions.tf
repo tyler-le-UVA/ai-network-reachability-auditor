@@ -11,7 +11,7 @@ terraform {
   # Remote state in S3 with native locking (no DynamoDB table needed on Terraform >= 1.10).
   # Backend blocks can't use variables, so replace the bucket name with your own.
   backend "s3" {
-    bucket       = "tf-state-123456789012-us-east-1"
+    bucket       = "tf-state-209901331329-us-east-1"
     key          = "network-auditor/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true

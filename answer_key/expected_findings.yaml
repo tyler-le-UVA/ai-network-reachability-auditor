@@ -1,5 +1,9 @@
 # Ground truth for the Milestone 1 lab.
 # Used to score the deterministic baseline (Milestone 3) and the AI auditor (Milestones 4-6).
+#
+# `match` blocks let the scorer pair a tool's finding with a planted issue.
+# Names are the Name tags / group names Terraform sets, so they survive rebuilds
+# (AWS IDs change every apply).
 
 lab: network-auditor-milestone-1
 vpc_cidr: 10.20.0.0/16
@@ -13,6 +17,7 @@ findings:
     reachable_from_internet: true
     severity: high
     fix: Restrict to an admin /32, or remove the rule and use SSM Session Manager
+    match: {check: sensitive_port_open_to_world, security_group: network-auditor-web-sg, port: 22}
 
   - id: P2
     title: RDP open to the internet on a Linux host
@@ -22,6 +27,7 @@ findings:
     reachable_from_internet: true
     severity: high
     fix: Remove the rule
+    match: {check: sensitive_port_open_to_world, security_group: network-auditor-web-sg, port: 3389}
 
   - id: P3
     title: Database port open to the whole VPC
@@ -31,6 +37,7 @@ findings:
     reachable_from_internet: false
     severity: medium
     fix: Replace cidr_ipv4 with referenced_security_group_id = web security group
+    match: {check: db_port_from_cidr, security_group: network-auditor-db-sg, port: 3306}
 
   - id: P4
     title: Private subnet routes directly to the internet gateway
@@ -43,6 +50,7 @@ findings:
     reachable_from_internet: false
     severity: medium
     fix: Remove the route, or send 0.0.0.0/0 to a NAT gateway if outbound access is needed
+    match: {check: private_subnet_routes_to_igw, subnet: network-auditor-private}
 
   - id: P5
     title: NACL silently blocks intended HTTP
@@ -56,6 +64,7 @@ findings:
     severity: low
     type: availability
     fix: Remove NACL rule 90 if the site should serve HTTP (or drop the SG rule if it shouldn't)
+    match: {check: nacl_blocks_sg_allowed_port, network_acl: network-auditor-public-nacl, port: 80}
 
 controls:  # correct configurations the auditor should NOT flag
   - id: C1
@@ -65,25 +74,56 @@ controls:  # correct configurations the auditor should NOT flag
   - id: C3
     detail: both hosts require IMDSv2
 
-reachability_questions:  # seed set for the Milestone 6 evaluation
-  - question: Can the internet reach the web server on port 22?
+# Seed set for evaluation. source/destination are roles:
+#   internet = the VPC's internet gateway, web/db = instances by Role tag,
+#   vpc = any address inside the VPC CIDR (no single host, so Reachability Analyzer skips it).
+reachability_questions:
+  - id: Q1
+    question: Can the internet reach the web server on port 22?
+    source: internet
+    destination: web
+    port: 22
     expected: yes
     because: P1
-  - question: Can the internet reach the web server on port 3389?
+  - id: Q2
+    question: Can the internet reach the web server on port 3389?
+    source: internet
+    destination: web
+    port: 3389
     expected: yes
     because: P2
-  - question: Can the internet reach the web server on port 80?
+  - id: Q3
+    question: Can the internet reach the web server on port 80?
+    source: internet
+    destination: web
+    port: 80
     expected: no
     because: NACL rule 90 denies it (P5), even though the security group allows it
-  - question: Can the internet reach the web server on port 443?
+  - id: Q4
+    question: Can the internet reach the web server on port 443?
+    source: internet
+    destination: web
+    port: 443
     expected: yes
     because: intended (C1)
-  - question: Can the internet reach the database on port 3306?
+  - id: Q5
+    question: Can the internet reach the database on port 3306?
+    source: internet
+    destination: db
+    port: 3306
     expected: no
     because: db has no public IP (C2), although the private route table is misconfigured (P4)
-  - question: Can the web server reach the database on port 3306?
+  - id: Q6
+    question: Can the web server reach the database on port 3306?
+    source: web
+    destination: db
+    port: 3306
     expected: yes
     because: intended path
-  - question: Can any host in the VPC reach the database on port 3306?
+  - id: Q7
+    question: Can any host in the VPC reach the database on port 3306?
+    source: vpc
+    destination: db
+    port: 3306
     expected: yes
     because: P3 (should be web tier only)

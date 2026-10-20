@@ -1,0 +1,89 @@
+# Ground truth for the Milestone 1 lab.
+# Used to score the deterministic baseline (Milestone 3) and the AI auditor (Milestones 4-6).
+
+lab: network-auditor-milestone-1
+vpc_cidr: 10.20.0.0/16
+
+findings:
+  - id: P1
+    title: SSH open to the internet
+    resource: aws_vpc_security_group_ingress_rule.web_ssh_world
+    component: web security group
+    detail: tcp/22 allowed from 0.0.0.0/0 on the web host
+    reachable_from_internet: true
+    severity: high
+    fix: Restrict to an admin /32, or remove the rule and use SSM Session Manager
+
+  - id: P2
+    title: RDP open to the internet on a Linux host
+    resource: aws_vpc_security_group_ingress_rule.web_rdp_world
+    component: web security group
+    detail: tcp/3389 allowed from 0.0.0.0/0; the host runs Linux and has no use for RDP
+    reachable_from_internet: true
+    severity: high
+    fix: Remove the rule
+
+  - id: P3
+    title: Database port open to the whole VPC
+    resource: aws_vpc_security_group_ingress_rule.db_mysql_vpc
+    component: db security group
+    detail: tcp/3306 allowed from 10.20.0.0/16 instead of only the web tier
+    reachable_from_internet: false
+    severity: medium
+    fix: Replace cidr_ipv4 with referenced_security_group_id = web security group
+
+  - id: P4
+    title: Private subnet routes directly to the internet gateway
+    resource: aws_route_table.private
+    component: private route table
+    detail: >
+      0.0.0.0/0 -> internet gateway on the "private" subnet. Latent risk: the db host
+      has no public IP, so it is NOT reachable from the internet today, but any
+      instance launched here with a public IP would be.
+    reachable_from_internet: false
+    severity: medium
+    fix: Remove the route, or send 0.0.0.0/0 to a NAT gateway if outbound access is needed
+
+  - id: P5
+    title: NACL silently blocks intended HTTP
+    resource: aws_network_acl.public (ingress rule 90)
+    component: public subnet NACL
+    detail: >
+      The web security group allows tcp/80, but NACL rule 90 denies tcp/80 inbound
+      before rule 100 allows everything. HTTP is NOT reachable. A security-group-only
+      check would wrongly report it as open.
+    reachable_from_internet: false
+    severity: low
+    type: availability
+    fix: Remove NACL rule 90 if the site should serve HTTP (or drop the SG rule if it shouldn't)
+
+controls:  # correct configurations the auditor should NOT flag
+  - id: C1
+    detail: tcp/443 open to 0.0.0.0/0 on the web host is intentional (public HTTPS)
+  - id: C2
+    detail: db host has no public IP
+  - id: C3
+    detail: both hosts require IMDSv2
+
+reachability_questions:  # seed set for the Milestone 6 evaluation
+  - question: Can the internet reach the web server on port 22?
+    expected: yes
+    because: P1
+  - question: Can the internet reach the web server on port 3389?
+    expected: yes
+    because: P2
+  - question: Can the internet reach the web server on port 80?
+    expected: no
+    because: NACL rule 90 denies it (P5), even though the security group allows it
+  - question: Can the internet reach the web server on port 443?
+    expected: yes
+    because: intended (C1)
+  - question: Can the internet reach the database on port 3306?
+    expected: no
+    because: db has no public IP (C2), although the private route table is misconfigured (P4)
+  - question: Can the web server reach the database on port 3306?
+    expected: yes
+    because: intended path
+  - question: Can any host in the VPC reach the database on port 3306?
+    expected: yes
+    because: P3 (should be web tier only)

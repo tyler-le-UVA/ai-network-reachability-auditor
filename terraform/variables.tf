@@ -15,3 +15,15 @@ variable "repo_name" {
   type        = string
   default     = "ai-network-reachability-auditor"
 }
+
+variable "vpc_cidr" {
+  description = "CIDR block for the lab VPC"
+  type        = string
+  default     = "10.20.0.0/16"
+}
+
+variable "instance_type" {
+  description = "Instance type for the lab hosts (keep it small; stop or destroy when idle)"
+  type        = string
+  default     = "t3.micro"
+}

@@ -1,0 +1,22 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+# Commit .terraform.lock.hcl (do not ignore it)
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Collector output / local secrets
+snapshots/live/
+.env

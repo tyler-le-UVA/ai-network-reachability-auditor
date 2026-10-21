@@ -17,6 +17,9 @@ __pycache__/
 .venv/
 .pytest_cache/
 
-# Collector output / local secrets
+# Collector output, analyzer cache, local secrets
 snapshots/live/
 .env
+
+# macOS
+.DS_Store

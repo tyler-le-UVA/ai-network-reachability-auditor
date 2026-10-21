@@ -1,0 +1,44 @@
+{
+  "snapshot": "snapshots/live/20261021T131728Z.json",
+  "model": "us.amazon.nova-2-lite-v1:0",
+  "question": "Can the web server reach the database on port 3306?",
+  "answer": "yes",
+  "summary": "The web server can reach the database on port 3306. The reachability analysis confirms the path is open with no blocking components.",
+  "blocked_by": null,
+  "citations": [
+    "RA-1"
+  ],
+  "verified": true,
+  "rejected_because": [],
+  "checks": [
+    {
+      "source": "i-075669b763753ca35",
+      "destination": "i-034f74167f6db311d",
+      "protocol": "tcp",
+      "port": 3306,
+      "reachable": true,
+      "explanations": [],
+      "blocked_by": null,
+      "path_components": [
+        "i-075669b763753ca35",
+        "eni-08616538bc2c0c5e0",
+        "sg-000d9d1a6e9a0dde4",
+        "acl-0bd91ac7d8e77b06f",
+        "rtb-0bd0fb84131f4397a",
+        "acl-026248df0384d9bd4",
+        "sg-08e9d4ca79eb2b867",
+        "eni-08ab6f1808ce519c7",
+        "i-034f74167f6db311d"
+      ],
+      "analysis_id": "nia-036ec13575aff8f2b",
+      "citation_id": "RA-1",
+      "source_label": "network-auditor-web",
+      "destination_label": "network-auditor-db"
+    }
+  ],
+  "usage": {
+    "inputTokens": 8682,
+    "outputTokens": 132
+  },
+  "raw_reply": "```json\n{\"answer\": \"yes\", \"summary\": \"The web server can reach the database on port 3306. The reachability analysis confirms the path is open with no blocking components.\", \"citations\": [\"RA-1\"], \"blocked_by\": null}\n```"
+}

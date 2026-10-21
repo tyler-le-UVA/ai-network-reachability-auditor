@@ -1,0 +1,52 @@
+{
+  "snapshot": "snapshots/live/20261021T131728Z.json",
+  "model": "us.amazon.nova-2-lite-v1:0",
+  "question": "Can the internet reach the database?",
+  "answer": "no",
+  "summary": "The internet cannot reach the database on port 3306. The path is blocked by the database security group (network-auditor-db-sg) which only allows MySQL traffic from within the VPC, and the internet gateway does not allow inbound traffic to private IP addresses.",
+  "blocked_by": "ENI_SG_RULES_MISMATCH",
+  "citations": [
+    "RA-1"
+  ],
+  "verified": true,
+  "rejected_because": [],
+  "checks": [
+    {
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-034f74167f6db311d",
+      "protocol": "tcp",
+      "port": 3306,
+      "reachable": false,
+      "explanations": [
+        {
+          "code": "IGW_PRIVATE_IP_ASSOCIATION_FOR_INGRESS",
+          "component_type": "InternetGateway",
+          "component_id": "igw-01d0d3085048ffe40",
+          "component_name": "network-auditor-igw"
+        },
+        {
+          "code": "ENI_SG_RULES_MISMATCH",
+          "component_type": "SecurityGroup",
+          "component_id": "sg-08e9d4ca79eb2b867",
+          "component_name": "network-auditor-db-sg"
+        }
+      ],
+      "blocked_by": "IGW_PRIVATE_IP_ASSOCIATION_FOR_INGRESS at network-auditor-igw; ENI_SG_RULES_MISMATCH at network-auditor-db-sg",
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-026248df0384d9bd4",
+        "eni-08ab6f1808ce519c7",
+        "i-034f74167f6db311d"
+      ],
+      "analysis_id": "nia-0ea6e8e1ffb7fabdf",
+      "citation_id": "RA-1",
+      "source_label": "network-auditor-igw",
+      "destination_label": "network-auditor-db"
+    }
+  ],
+  "usage": {
+    "inputTokens": 8806,
+    "outputTokens": 162
+  },
+  "raw_reply": "```json\n{\"answer\": \"no\", \"summary\": \"The internet cannot reach the database on port 3306. The path is blocked by the database security group (network-auditor-db-sg) which only allows MySQL traffic from within the VPC, and the internet gateway does not allow inbound traffic to private IP addresses.\", \"citations\": [\"RA-1\"], \"blocked_by\": \"ENI_SG_RULES_MISMATCH\"}\n```"
+}

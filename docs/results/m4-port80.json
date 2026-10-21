@@ -1,0 +1,58 @@
+{
+  "snapshot": "snapshots/live/20261021T131728Z.json",
+  "model": "us.amazon.nova-2-lite-v1:0",
+  "question": "Can the internet reach the web server on port 80?",
+  "answer": "no",
+  "summary": "The internet cannot reach the web server on port 80 because the public subnet's network ACL explicitly denies TCP port 80 from any source (rule 90).",
+  "blocked_by": "SUBNET_ACL_RESTRICTION at network-auditor-public-nacl (rule 90 deny)",
+  "citations": [
+    "RA-1"
+  ],
+  "verified": true,
+  "rejected_because": [],
+  "checks": [
+    {
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-075669b763753ca35",
+      "protocol": "tcp",
+      "port": 80,
+      "reachable": false,
+      "explanations": [
+        {
+          "code": "SUBNET_ACL_RESTRICTION",
+          "component_type": "Acl",
+          "component_id": "acl-0bd91ac7d8e77b06f",
+          "component_name": "network-auditor-public-nacl",
+          "acl_rule": {
+            "rule_number": 90,
+            "action": "deny",
+            "protocol": "tcp",
+            "ports": [
+              80,
+              80
+            ],
+            "cidr": "0.0.0.0/0",
+            "egress": false
+          }
+        }
+      ],
+      "blocked_by": "SUBNET_ACL_RESTRICTION at network-auditor-public-nacl (rule 90 deny)",
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-0bd91ac7d8e77b06f",
+        "sg-000d9d1a6e9a0dde4",
+        "eni-08616538bc2c0c5e0",
+        "i-075669b763753ca35"
+      ],
+      "analysis_id": "nia-0a893e313c142e18a",
+      "citation_id": "RA-1",
+      "source_label": "network-auditor-igw",
+      "destination_label": "network-auditor-web"
+    }
+  ],
+  "usage": {
+    "inputTokens": 8807,
+    "outputTokens": 160
+  },
+  "raw_reply": "```json\n{\"answer\": \"no\", \"summary\": \"The internet cannot reach the web server on port 80 because the public subnet's network ACL explicitly denies TCP port 80 from any source (rule 90).\", \"citations\": [\"RA-1\"], \"blocked_by\": \"SUBNET_ACL_RESTRICTION at network-auditor-public-nacl (rule 90 deny)\"}\n```"
+}

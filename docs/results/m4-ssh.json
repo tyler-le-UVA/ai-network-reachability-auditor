@@ -1,0 +1,40 @@
+{
+  "snapshot": "snapshots/live/20261021T131728Z.json",
+  "model": "us.amazon.nova-2-lite-v1:0",
+  "question": "Is SSH open to the internet on any host?",
+  "answer": "yes",
+  "summary": "SSH (port 22) is open to the internet on the web instance, as confirmed by the reachability analysis.",
+  "blocked_by": null,
+  "citations": [
+    "RA-1"
+  ],
+  "verified": true,
+  "rejected_because": [],
+  "checks": [
+    {
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-075669b763753ca35",
+      "protocol": "tcp",
+      "port": 22,
+      "reachable": true,
+      "explanations": [],
+      "blocked_by": null,
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-0bd91ac7d8e77b06f",
+        "sg-000d9d1a6e9a0dde4",
+        "eni-08616538bc2c0c5e0",
+        "i-075669b763753ca35"
+      ],
+      "analysis_id": "nia-02ec707dd8f50e418",
+      "citation_id": "RA-1",
+      "source_label": "network-auditor-igw",
+      "destination_label": "network-auditor-web"
+    }
+  ],
+  "usage": {
+    "inputTokens": 8663,
+    "outputTokens": 118
+  },
+  "raw_reply": "```json\n{\"answer\": \"yes\", \"summary\": \"SSH (port 22) is open to the internet on the web instance, as confirmed by the reachability analysis.\", \"citations\": [\"RA-1\"], \"blocked_by\": null}\n```"
+}

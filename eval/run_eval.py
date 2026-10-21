@@ -203,6 +203,7 @@ def run_ai(cases: list[dict], snapshot: dict, model: str, bedrock, analyzer: Cac
                         f"{k['protocol']}/{k['port']}", "reachable": k["reachable"]} for k in r["checks"]],
             "analyzer_calls": len(r["checks"]),
             "rejections": r["rejections"],
+            "model_errors_retried": r.get("model_errors_retried", 0),
             "inputTokens": r["usage"]["inputTokens"],
             "outputTokens": r["usage"]["outputTokens"],
             "seconds": round(time.monotonic() - start, 1),

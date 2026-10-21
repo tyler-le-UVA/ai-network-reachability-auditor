@@ -271,3 +271,74 @@ def test_acl_explanation_uses_name_tag_from_snapshot():
     s = reachability.summarize_explanation(exp, names)
     assert reachability.describe_blocker([s]) == \
         "SUBNET_ACL_RESTRICTION at network-auditor-public-nacl (rule 90 deny)"
+
+
+# ---------- Nova tool-use reliability ----------
+
+class ModelError(Exception):
+    def __init__(self):
+        super().__init__("Model produced invalid sequence as part of ToolUse.")
+        self.response = {"Error": {"Code": "ModelErrorException"}}
+
+
+class FlakyBedrock(FakeBedrock):
+    def __init__(self, script, failures):
+        super().__init__(script)
+        self.failures = failures
+
+    def converse(self, **kw):
+        if self.failures:
+            self.failures -= 1
+            self.requests.append(kw)
+            raise ModelError()
+        return super().converse(**kw)
+
+
+def test_nova_requests_use_greedy_decoding_and_room_for_tool_calls():
+    auditor, bedrock, _ = make([final({"answer": "unknown", "summary": "n/a", "citations": [], "blocked_by": None})])
+    auditor.ask("q")
+    req = bedrock.requests[0]
+    assert req["additionalModelRequestFields"] == {"inferenceConfig": {"topK": 1}}
+    assert req["inferenceConfig"]["maxTokens"] >= 3000
+
+
+def test_non_nova_model_gets_no_nova_specific_fields():
+    auditor, bedrock, _ = make([final({"answer": "unknown", "summary": "n/a", "citations": [], "blocked_by": None})],
+                               model_id="some.other-model")
+    auditor.ask("q")
+    assert "additionalModelRequestFields" not in bedrock.requests[0]
+
+
+def test_malformed_tool_call_is_retried_once():
+    analyzer = FakeAnalyzer()
+    bedrock = FlakyBedrock([
+        tool_call("check_path", {"source": "internet", "destination": "web", "port": 80}),
+        final(GOOD_NO),
+    ], failures=1)
+    r = agent.Auditor(bedrock, None, lab_snapshot(), check_fn=analyzer).ask("q")
+    assert r["verified"] is True and r["model_errors_retried"] == 1
+
+
+def test_repeated_model_error_is_raised():
+    bedrock = FlakyBedrock([], failures=2)
+    auditor = agent.Auditor(bedrock, None, lab_snapshot(), check_fn=FakeAnalyzer())
+    try:
+        auditor.ask("q")
+    except ModelError:
+        return
+    raise AssertionError("expected ModelError")
+
+
+def test_other_errors_are_not_retried():
+    class Denied(FakeBedrock):
+        def converse(self, **kw):
+            self.requests.append(kw)
+            raise PermissionError("AccessDeniedException")
+    bedrock = Denied([])
+    auditor = agent.Auditor(bedrock, None, lab_snapshot(), check_fn=FakeAnalyzer())
+    try:
+        auditor.ask("q")
+    except PermissionError:
+        assert len(bedrock.requests) == 1
+        return
+    raise AssertionError("expected PermissionError")

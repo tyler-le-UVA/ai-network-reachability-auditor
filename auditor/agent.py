@@ -221,6 +221,32 @@ class Auditor:
 
     # ---------- main loop ----------
 
+    def request(self, messages: list) -> dict:
+        req = {
+            "modelId": self.model_id,
+            "system": [{"text": SYSTEM_PROMPT}],
+            "messages": messages,
+            "toolConfig": TOOL_CONFIG,
+            # Room for Nova's <thinking> text plus the tool call; too small a limit cuts a tool call off.
+            "inferenceConfig": {"maxTokens": 3000, "temperature": 0},
+        }
+        if "nova" in self.model_id:
+            # AWS's Nova tool-use guidance: greedy decoding (temperature 0 and topK 1)
+            # makes tool calls more reliable.
+            req["additionalModelRequestFields"] = {"inferenceConfig": {"topK": 1}}
+        return req
+
+    def converse(self, messages: list) -> dict:
+        """One Converse call, retried once if the model emits a malformed tool call."""
+        for attempt in (1, 2):
+            try:
+                return self.bedrock.converse(**self.request(messages))
+            except Exception as err:
+                code = getattr(err, "response", {}).get("Error", {}).get("Code") or type(err).__name__
+                if code != "ModelErrorException" or attempt == 2:
+                    raise
+                self.model_errors += 1
+
     def ask(self, question: str) -> dict:
         messages = [{"role": "user", "content": [{"text": question}]}]
         usage = {"inputTokens": 0, "outputTokens": 0}
@@ -230,14 +256,9 @@ class Auditor:
         rejected: list[str] = []
         raw = ""
 
+        self.model_errors = 0
         for _ in range(self.max_turns):
-            resp = self.bedrock.converse(
-                modelId=self.model_id,
-                system=[{"text": SYSTEM_PROMPT}],
-                messages=messages,
-                toolConfig=TOOL_CONFIG,
-                inferenceConfig={"maxTokens": 1500, "temperature": 0},
-            )
+            resp = self.converse(messages)
             for k in usage:
                 usage[k] += (resp.get("usage") or {}).get(k, 0)
             message = resp["output"]["message"]
@@ -292,6 +313,7 @@ class Auditor:
             "rejected_because": problems,
             "attempts": self.replies,
             "rejections": self.rejections,
+            "model_errors_retried": self.model_errors,
             "checks": list(self.checks.values()),
             "usage": usage,
             "raw_reply": raw,

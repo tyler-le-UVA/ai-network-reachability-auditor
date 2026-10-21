@@ -29,22 +29,42 @@ COST_PER_ANALYSIS = 0.10
 
 # ---------- explanation parsing ----------
 
+# Most specific first. An explanation often lists several components (for a
+# security group mismatch: the ENI, its security groups, the subnet and the VPC),
+# and the one that actually decided the outcome is the rule-bearing one.
 COMPONENT_KEYS = [
-    "Acl", "SecurityGroup", "RouteTable", "Subnet", "InternetGateway",
-    "NetworkInterface", "Destination", "Component",
+    "Acl", "SecurityGroups", "SecurityGroup", "RouteTable", "InternetGateway",
+    "NatGateway", "NetworkInterface", "Component", "Destination", "Subnet", "Vpc",
 ]
 
 
-def summarize_explanation(exp: dict) -> dict:
+def build_name_map(snapshot: dict) -> dict[str, str]:
+    """AWS ID -> Name tag (or group name) from a collector snapshot."""
+    names = {}
+    for section in ["internet_gateways", "subnets", "route_tables", "network_acls", "security_groups", "instances"]:
+        for item in snapshot.get(section, []):
+            if item.get("name"):
+                names[item["id"]] = item["name"]
+    if snapshot.get("vpc", {}).get("name"):
+        names[snapshot["vpc"]["id"]] = snapshot["vpc"]["name"]
+    return names
+
+
+def summarize_explanation(exp: dict, names: dict[str, str] | None = None) -> dict:
     """Pick the useful parts out of one Reachability Analyzer explanation."""
+    names = names or {}
     out = {"code": exp.get("ExplanationCode")}
     for key in COMPONENT_KEYS:
         comp = exp.get(key)
-        if comp and comp.get("Id"):
-            out["component_type"] = key
-            out["component_id"] = comp["Id"]
-            if comp.get("Name"):
-                out["component_name"] = comp["Name"]
+        comps = comp if isinstance(comp, list) else [comp] if comp else []
+        comps = [c for c in comps if c and c.get("Id")]
+        if comps:
+            ids = [c["Id"] for c in comps]
+            out["component_type"] = key.rstrip("s") if key == "SecurityGroups" else key
+            out["component_id"] = ", ".join(ids)
+            labels = [c.get("Name") or names.get(c["Id"]) for c in comps]
+            if all(labels):
+                out["component_name"] = ", ".join(labels)
             break
     rule = exp.get("AclRule")
     if rule:
@@ -76,7 +96,8 @@ def describe_blocker(explanations: list[dict]) -> str:
 # ---------- the analyzer call ----------
 
 def check_path(ec2, source_id: str, destination_id: str, port: int, protocol: str = "tcp",
-               timeout: int = 300, poll: float = 3.0, sleep=time.sleep) -> dict:
+               timeout: int = 300, poll: float = 3.0, sleep=time.sleep,
+               names: dict[str, str] | None = None) -> dict:
     """Run one analysis and always clean up. Returns a plain dict the AI can cite."""
     path_id = analysis_id = None
     try:
@@ -104,7 +125,7 @@ def check_path(ec2, source_id: str, destination_id: str, port: int, protocol: st
         if analysis["Status"] != "succeeded":
             raise RuntimeError(f"analysis failed: {analysis.get('StatusMessage', analysis['Status'])}")
 
-        explanations = [summarize_explanation(e) for e in analysis.get("Explanations", [])]
+        explanations = [summarize_explanation(e, names) for e in analysis.get("Explanations", [])]
         reachable = bool(analysis.get("NetworkPathFound"))
         return {
             "source": source_id,
@@ -195,6 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     ec2 = make_session(args.role_arn, args.region).client("ec2")
+    names = build_name_map(snapshot)
     results, answers = [], {}
     for q in questions:
         src = resolve(snapshot, q["source"])
@@ -202,7 +224,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  skip  {q['id']} {q['question']} (needs a concrete source host)")
             answers[q["id"]] = None
             continue
-        r = check_path(ec2, src, resolve(snapshot, q["destination"]), q["port"])
+        r = check_path(ec2, src, resolve(snapshot, q["destination"]), q["port"], names=names)
         answers[q["id"]] = r["reachable"]
         results.append({"question_id": q["id"], "question": q["question"], **r})
         verdict = "REACHABLE" if r["reachable"] else "blocked"

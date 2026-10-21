@@ -224,6 +224,8 @@ class Auditor:
     def ask(self, question: str) -> dict:
         messages = [{"role": "user", "content": [{"text": question}]}]
         usage = {"inputTokens": 0, "outputTokens": 0}
+        self.replies: list[dict | None] = []      # every final-answer attempt, parsed
+        self.rejections: list[list[str]] = []     # why each rejected attempt failed
         retries_left = 1
         rejected: list[str] = []
         raw = ""
@@ -257,6 +259,9 @@ class Auditor:
             raw = "".join(c.get("text", "") for c in message["content"])
             reply = extract_json(raw)
             problems = self.validate(reply)
+            self.replies.append(reply)
+            if problems:
+                self.rejections.append(problems)
             if not problems:
                 return self._result(question, reply, True, [], usage, raw)
             rejected = problems
@@ -285,6 +290,8 @@ class Auditor:
             "citations": reply.get("citations") or [],
             "verified": verified,
             "rejected_because": problems,
+            "attempts": self.replies,
+            "rejections": self.rejections,
             "checks": list(self.checks.values()),
             "usage": usage,
             "raw_reply": raw,

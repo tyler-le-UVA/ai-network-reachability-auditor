@@ -1,0 +1,80 @@
+{
+  "finding_id": "P1",
+  "title": "SSH open to the internet",
+  "resource": "aws_vpc_security_group_ingress_rule.web_ssh_world",
+  "file": "terraform/security.tf",
+  "created_at": "2026-10-21T14:21:48+00:00",
+  "model": "us.amazon.nova-2-lite-v1:0",
+  "action": "delete",
+  "rationale": "SSH open to the internet is a high-severity security risk; removing the rule eliminates this exposure and aligns with best practices of using AWS Systems Manager Session Manager for administrative access.",
+  "side_effects": "none",
+  "patch_file": "docs/results/m5-P1.patch",
+  "validation": {
+    "status": "passed",
+    "output": "Success! The configuration is valid."
+  },
+  "baseline_caught_before": true,
+  "verify": {
+    "source": "internet",
+    "destination": "web",
+    "port": 22,
+    "after": "blocked"
+  },
+  "before": {
+    "source": "igw-01d0d3085048ffe40",
+    "destination": "i-075669b763753ca35",
+    "protocol": "tcp",
+    "port": 22,
+    "reachable": true,
+    "explanations": [],
+    "blocked_by": null,
+    "path_components": [
+      "igw-01d0d3085048ffe40",
+      "acl-0bd91ac7d8e77b06f",
+      "sg-000d9d1a6e9a0dde4",
+      "eni-08616538bc2c0c5e0",
+      "i-075669b763753ca35"
+    ],
+    "analysis_id": "nia-0f3d3326090718480"
+  },
+  "usage": {
+    "inputTokens": 768,
+    "outputTokens": 70
+  },
+  "verification": {
+    "snapshot": "snapshots/live/20261021T142928Z.json",
+    "patch_applied": true,
+    "rule_level": {
+      "passed": true,
+      "detail": "baseline no longer reports the finding"
+    },
+    "path_level": {
+      "passed": true,
+      "expected": "blocked",
+      "after": {
+        "source": "igw-01d0d3085048ffe40",
+        "destination": "i-075669b763753ca35",
+        "protocol": "tcp",
+        "port": 22,
+        "reachable": false,
+        "explanations": [
+          {
+            "code": "ENI_SG_RULES_MISMATCH",
+            "component_type": "SecurityGroup",
+            "component_id": "sg-000d9d1a6e9a0dde4",
+            "component_name": "network-auditor-web-sg"
+          }
+        ],
+        "blocked_by": "ENI_SG_RULES_MISMATCH at network-auditor-web-sg",
+        "path_components": [
+          "igw-01d0d3085048ffe40",
+          "acl-0bd91ac7d8e77b06f",
+          "eni-08616538bc2c0c5e0",
+          "i-075669b763753ca35"
+        ],
+        "analysis_id": "nia-09a034d205ac26081"
+      }
+    },
+    "passed": true
+  }
+}

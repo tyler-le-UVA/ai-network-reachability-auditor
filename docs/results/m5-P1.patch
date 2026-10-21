@@ -1,0 +1,19 @@
+--- a/terraform/security.tf
++++ b/terraform/security.tf
+@@ -9,16 +9,6 @@
+   vpc_id      = aws_vpc.lab.id
+ 
+   tags = { Name = "${var.project}-web-sg" }
+-}
+-
+-# PLANTED P1: SSH open to the entire internet.
+-resource "aws_vpc_security_group_ingress_rule" "web_ssh_world" {
+-  security_group_id = aws_security_group.web.id
+-  description       = "SSH from anywhere"
+-  ip_protocol       = "tcp"
+-  from_port         = 22
+-  to_port           = 22
+-  cidr_ipv4         = "0.0.0.0/0"
+ }
+ 
+ # PLANTED P2: RDP open to the internet on a Linux host that doesn't use it.

@@ -2,6 +2,8 @@
 # Used to score the deterministic baseline (Milestone 3) and the AI auditor (Milestones 4-6).
 #
 # `match` blocks let the scorer pair a tool's finding with a planted issue.
+# `verify` says which analyzer path proves a fix worked (Milestone 5). P4 has no live
+# path to test (the db has no public IP), so it is verified by the baseline check alone.
 # Names are the Name tags / group names Terraform sets, so they survive rebuilds
 # (AWS IDs change every apply).
 
@@ -18,6 +20,7 @@ findings:
     severity: high
     fix: Restrict to an admin /32, or remove the rule and use SSM Session Manager
     match: {check: sensitive_port_open_to_world, security_group: network-auditor-web-sg, port: 22}
+    verify: {source: internet, destination: web, port: 22, after: blocked}
 
   - id: P2
     title: RDP open to the internet on a Linux host
@@ -28,6 +31,7 @@ findings:
     severity: high
     fix: Remove the rule
     match: {check: sensitive_port_open_to_world, security_group: network-auditor-web-sg, port: 3389}
+    verify: {source: internet, destination: web, port: 3389, after: blocked}
 
   - id: P3
     title: Database port open to the whole VPC
@@ -38,6 +42,7 @@ findings:
     severity: medium
     fix: Replace cidr_ipv4 with referenced_security_group_id = web security group
     match: {check: db_port_from_cidr, security_group: network-auditor-db-sg, port: 3306}
+    verify: {source: web, destination: db, port: 3306, after: reachable}  # the fix must keep the intended path
 
   - id: P4
     title: Private subnet routes directly to the internet gateway
@@ -65,6 +70,7 @@ findings:
     type: availability
     fix: Remove NACL rule 90 if the site should serve HTTP (or drop the SG rule if it shouldn't)
     match: {check: nacl_blocks_sg_allowed_port, network_acl: network-auditor-public-nacl, port: 80}
+    verify: {source: internet, destination: web, port: 80, after: reachable}
 
 controls:  # correct configurations the auditor should NOT flag
   - id: C1

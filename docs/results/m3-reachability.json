@@ -1,0 +1,164 @@
+{
+  "tool": "reachability-analyzer",
+  "results": [
+    {
+      "question_id": "Q1",
+      "question": "Can the internet reach the web server on port 22?",
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-075669b763753ca35",
+      "protocol": "tcp",
+      "port": 22,
+      "reachable": true,
+      "explanations": [],
+      "blocked_by": null,
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-0bd91ac7d8e77b06f",
+        "sg-000d9d1a6e9a0dde4",
+        "eni-08616538bc2c0c5e0",
+        "i-075669b763753ca35"
+      ],
+      "analysis_id": "nia-032b2f2b34342d709"
+    },
+    {
+      "question_id": "Q2",
+      "question": "Can the internet reach the web server on port 3389?",
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-075669b763753ca35",
+      "protocol": "tcp",
+      "port": 3389,
+      "reachable": true,
+      "explanations": [],
+      "blocked_by": null,
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-0bd91ac7d8e77b06f",
+        "sg-000d9d1a6e9a0dde4",
+        "eni-08616538bc2c0c5e0",
+        "i-075669b763753ca35"
+      ],
+      "analysis_id": "nia-039a7f99224c1291f"
+    },
+    {
+      "question_id": "Q3",
+      "question": "Can the internet reach the web server on port 80?",
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-075669b763753ca35",
+      "protocol": "tcp",
+      "port": 80,
+      "reachable": false,
+      "explanations": [
+        {
+          "code": "SUBNET_ACL_RESTRICTION",
+          "component_type": "Acl",
+          "component_id": "acl-0bd91ac7d8e77b06f",
+          "acl_rule": {
+            "rule_number": 90,
+            "action": "deny",
+            "protocol": "tcp",
+            "ports": [
+              80,
+              80
+            ],
+            "cidr": "0.0.0.0/0",
+            "egress": false
+          }
+        }
+      ],
+      "blocked_by": "SUBNET_ACL_RESTRICTION at acl-0bd91ac7d8e77b06f (rule 90 deny)",
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-0bd91ac7d8e77b06f",
+        "sg-000d9d1a6e9a0dde4",
+        "eni-08616538bc2c0c5e0",
+        "i-075669b763753ca35"
+      ],
+      "analysis_id": "nia-06d4d8423cc7d7d12"
+    },
+    {
+      "question_id": "Q4",
+      "question": "Can the internet reach the web server on port 443?",
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-075669b763753ca35",
+      "protocol": "tcp",
+      "port": 443,
+      "reachable": true,
+      "explanations": [],
+      "blocked_by": null,
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-0bd91ac7d8e77b06f",
+        "sg-000d9d1a6e9a0dde4",
+        "eni-08616538bc2c0c5e0",
+        "i-075669b763753ca35"
+      ],
+      "analysis_id": "nia-0c8223b15390fdcf5"
+    },
+    {
+      "question_id": "Q5",
+      "question": "Can the internet reach the database on port 3306?",
+      "source": "igw-01d0d3085048ffe40",
+      "destination": "i-034f74167f6db311d",
+      "protocol": "tcp",
+      "port": 3306,
+      "reachable": false,
+      "explanations": [
+        {
+          "code": "IGW_PRIVATE_IP_ASSOCIATION_FOR_INGRESS",
+          "component_type": "InternetGateway",
+          "component_id": "igw-01d0d3085048ffe40"
+        },
+        {
+          "code": "ENI_SG_RULES_MISMATCH",
+          "component_type": "Subnet",
+          "component_id": "subnet-0297b9b372f821b83"
+        }
+      ],
+      "blocked_by": "IGW_PRIVATE_IP_ASSOCIATION_FOR_INGRESS at igw-01d0d3085048ffe40; ENI_SG_RULES_MISMATCH at subnet-0297b9b372f821b83",
+      "path_components": [
+        "igw-01d0d3085048ffe40",
+        "acl-026248df0384d9bd4",
+        "eni-08ab6f1808ce519c7",
+        "i-034f74167f6db311d"
+      ],
+      "analysis_id": "nia-06f13f8fa238dcb72"
+    },
+    {
+      "question_id": "Q6",
+      "question": "Can the web server reach the database on port 3306?",
+      "source": "i-075669b763753ca35",
+      "destination": "i-034f74167f6db311d",
+      "protocol": "tcp",
+      "port": 3306,
+      "reachable": true,
+      "explanations": [],
+      "blocked_by": null,
+      "path_components": [
+        "i-075669b763753ca35",
+        "eni-08616538bc2c0c5e0",
+        "sg-000d9d1a6e9a0dde4",
+        "acl-0bd91ac7d8e77b06f",
+        "rtb-0bd0fb84131f4397a",
+        "acl-026248df0384d9bd4",
+        "sg-08e9d4ca79eb2b867",
+        "eni-08ab6f1808ce519c7",
+        "i-034f74167f6db311d"
+      ],
+      "analysis_id": "nia-0622db07810302fd5"
+    }
+  ],
+  "answer_score": {
+    "correct": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5",
+      "Q6"
+    ],
+    "wrong": [],
+    "skipped": [
+      "Q7"
+    ]
+  }
+}

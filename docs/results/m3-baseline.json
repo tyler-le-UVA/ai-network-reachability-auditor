@@ -1,0 +1,90 @@
+{
+  "tool": "naive-baseline",
+  "snapshot": "snapshots/live/20261020T195307Z.json",
+  "findings": [
+    {
+      "check": "sensitive_port_open_to_world",
+      "severity": "high",
+      "security_group": "network-auditor-web-sg",
+      "port": 22,
+      "detail": "SSH (tcp/22) allowed from 0.0.0.0/0"
+    },
+    {
+      "check": "sensitive_port_open_to_world",
+      "severity": "high",
+      "security_group": "network-auditor-web-sg",
+      "port": 3389,
+      "detail": "RDP (tcp/3389) allowed from 0.0.0.0/0"
+    },
+    {
+      "check": "db_port_from_cidr",
+      "severity": "medium",
+      "security_group": "network-auditor-db-sg",
+      "port": 3306,
+      "detail": "MySQL (tcp/3306) allowed from range 10.20.0.0/16 instead of a specific security group"
+    },
+    {
+      "check": "private_subnet_routes_to_igw",
+      "severity": "medium",
+      "subnet": "network-auditor-private",
+      "route_table": "network-auditor-private-rt",
+      "detail": "subnet named private uses network-auditor-private-rt, which sends 0.0.0.0/0 to an internet gateway"
+    }
+  ],
+  "finding_score": {
+    "caught": [
+      "P1",
+      "P2",
+      "P3",
+      "P4"
+    ],
+    "missed": [
+      "P5"
+    ],
+    "false_positives": []
+  },
+  "answers": {
+    "Q1": {
+      "reachable": true,
+      "reason": "security group allows tcp/22 from the internet (NACLs not checked)"
+    },
+    "Q2": {
+      "reachable": true,
+      "reason": "security group allows tcp/3389 from the internet (NACLs not checked)"
+    },
+    "Q3": {
+      "reachable": true,
+      "reason": "security group allows tcp/80 from the internet (NACLs not checked)"
+    },
+    "Q4": {
+      "reachable": true,
+      "reason": "security group allows tcp/443 from the internet (NACLs not checked)"
+    },
+    "Q5": {
+      "reachable": false,
+      "reason": "db has no public IP"
+    },
+    "Q6": {
+      "reachable": true,
+      "reason": "security group allows tcp/3306 from web (NACLs not checked)"
+    },
+    "Q7": {
+      "reachable": true,
+      "reason": "security group allows tcp/3306 from the whole VPC range"
+    }
+  },
+  "answer_score": {
+    "correct": [
+      "Q1",
+      "Q2",
+      "Q4",
+      "Q5",
+      "Q6",
+      "Q7"
+    ],
+    "wrong": [
+      "Q3"
+    ],
+    "skipped": []
+  }
+}
